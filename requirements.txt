@@ -1,0 +1,8 @@
+streamlit
+PyYAML
+openapi-spec-validator
+Faker
+jsonschema
+pandas
+openpyxl
+pytest

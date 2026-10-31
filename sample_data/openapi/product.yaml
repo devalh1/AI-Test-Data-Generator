@@ -1,0 +1,8 @@
+product:
+  name: MacBook
+  price: 999.99
+  available: true
+  colors:
+    - Silver
+    - Midnight
+    - Starlight

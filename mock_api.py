@@ -92,6 +92,22 @@ def create_user(data: dict):
                 status_code=422,
                 detail="Role must be admin, user, or guest"
             )
+    
+    # Validate full_name when provided
+    if "full_name" in data:
+        full_name = data["full_name"]
+
+        if not isinstance(full_name, str):
+            raise HTTPException(
+                status_code=422,
+                detail="Full name must be a string"
+            )
+
+        if not 3 <= len(full_name) <= 60:
+            raise HTTPException(
+                status_code=422,
+                detail="Full name must contain 3-60 characters"
+            )
 
     return {
         "message": "User created",

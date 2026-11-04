@@ -46,6 +46,10 @@ paths:
                   type: string
                   minLength: 3
                   maxLength: 20
+                full_name:
+                  type: string
+                  minLength: 3
+                  maxLength: 60
                 age:
                   type: integer
                   minimum: 18

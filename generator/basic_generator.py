@@ -2,6 +2,7 @@
 import random
 import string
 from faker import Faker
+from generator.context_generator import generate_contextual_request
 
 fake = Faker("en_IN")
 
@@ -152,11 +153,5 @@ def generate_value(field_schema, field_name=""):
 
 
 def generate_request_data(schema):
-    """Generate an entire request body."""
-
-    properties = schema.get("properties", {})
-
-    return {
-        name: generate_value(field_schema, name)
-        for name, field_schema in properties.items()
-    }
+    """Generate a request body with consistent related fields."""
+    return generate_contextual_request(schema, generate_value)

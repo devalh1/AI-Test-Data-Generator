@@ -46,9 +46,26 @@ The application will allow testers to upload an OpenAPI specification, select an
 
 ## Current Status
 
-Initial development environment and project structure established.
+The project currently has a working prototype with the following functionality:
 
-Core functionality is under development.
+- Parses OpenAPI specifications written in YAML.
+- Extracts API endpoints, HTTP methods, and request-body schemas.
+- Generates positive and negative test data.
+- Generates boundary-value test cases for string and integer constraints.
+- Tests email formats and missing required fields.
+- Exports generated test cases to JSON.
+- Executes generated test cases against a local FastAPI mock API.
+- Evaluates API responses and generates a JSON execution report.
+
+**Current test results:**
+- Total test cases: 15
+- Passed: 15
+- Failed: 0
+- Errors: 0
+
+The prototype has also been tested on both macOS and Windows.
+
+AI-assisted generation and the web interface are planned for future development.
 
 ## Future Enhancements
 

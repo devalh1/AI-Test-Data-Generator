@@ -1,26 +1,96 @@
 
 import random
 import string
+from faker import Faker
+
+fake = Faker("en_IN")
 
 
-def generate_value(field_schema):
-    """Generate a value based on an OpenAPI field schema."""
+def generate_realistic_string(field_name, field_schema):
+    """Generate realistic data based on a field's name."""
 
-    # Enum takes priority over normal type generation.
+    field_name = field_name.lower()
+
+    generators = {
+        "name": fake.name,
+        "full_name": fake.name,
+        "first_name": fake.first_name,
+        "last_name": fake.last_name,
+        "username": fake.user_name,
+        "city": fake.city,
+        "email": fake.email,
+        "phone": fake.msisdn,
+        "phone_number": fake.msisdn,
+        "company": fake.company,
+        "address": fake.street_address,
+        "product_name": lambda: random.choice([
+            "Wireless Mouse",
+            "Mechanical Keyboard",
+            "USB-C Hub",
+            "Laptop Stand",
+            "Bluetooth Speaker"
+        ])
+    }
+
+    generator = generators.get(field_name)
+
+    if generator is None:
+        return None
+
+    min_length = field_schema.get("minLength", 0)
+    max_length = field_schema.get("maxLength")
+
+    # Try generating a value that respects schema constraints.
+    for _ in range(30):
+        value = generator()
+
+        if len(value) < min_length:
+            continue
+
+        if max_length is not None and len(value) > max_length:
+            continue
+
+        return value
+
+    # If realistic data cannot satisfy constraints,
+    # fall back to generic generation.
+    return None
+
+
+def generate_value(field_schema, field_name=""):
+    """Generate data using field meaning and schema constraints."""
+
     if "enum" in field_schema:
-        enum_values = field_schema["enum"]
+        values = field_schema["enum"]
 
-        if not enum_values:
+        if not values:
             raise ValueError("Enum must contain at least one value")
 
-        return random.choice(enum_values)
+        return random.choice(values)
 
     field_type = field_schema.get("type", "string")
 
     if field_type == "string":
+        realistic = generate_realistic_string(
+            field_name, field_schema
+        )
+
+        if realistic is not None:
+            return realistic
 
         if field_schema.get("format") == "email":
-            return "alex@example.com"
+            for _ in range(30):
+                email = fake.email()
+                if (
+                    len(email) >= field_schema.get("minLength", 0)
+                    and len(email) <= field_schema.get("maxLength", float("inf"))
+                ):
+                    return email
+
+            raise ValueError(
+                f"Cannot generate email for {field_name} "
+                "within the specified length constraints"
+            )
 
         min_length = field_schema.get("minLength", 1)
         max_length = field_schema.get("maxLength", 12)
@@ -34,7 +104,6 @@ def generate_value(field_schema):
         return "".join(random.choices(characters, k=length))
 
     elif field_type == "integer":
-
         minimum = field_schema.get("minimum", 0)
         maximum = field_schema.get("maximum", 100)
 
@@ -44,7 +113,6 @@ def generate_value(field_schema):
         return random.randint(minimum, maximum)
 
     elif field_type == "number":
-
         minimum = field_schema.get("minimum", 0)
         maximum = field_schema.get("maximum", 100)
 
@@ -57,7 +125,6 @@ def generate_value(field_schema):
         return random.choice([True, False])
 
     elif field_type == "array":
-
         items_schema = field_schema.get("items", {})
 
         min_items = field_schema.get("minItems", 1)
@@ -69,29 +136,27 @@ def generate_value(field_schema):
         item_count = random.randint(min_items, max_items)
 
         return [
-            generate_value(items_schema)
+            generate_value(items_schema, field_name)
             for _ in range(item_count)
         ]
 
     elif field_type == "object":
-
         properties = field_schema.get("properties", {})
 
         return {
-            name: generate_value(property_schema)
-            for name, property_schema in properties.items()
+            name: generate_value(schema, name)
+            for name, schema in properties.items()
         }
 
     return None
 
 
 def generate_request_data(schema):
-    """Generate a complete request body from schema properties."""
+    """Generate an entire request body."""
 
-    request_data = {}
     properties = schema.get("properties", {})
 
-    for name, field_schema in properties.items():
-        request_data[name] = generate_value(field_schema)
-
-    return request_data
+    return {
+        name: generate_value(field_schema, name)
+        for name, field_schema in properties.items()
+    }

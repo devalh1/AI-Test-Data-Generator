@@ -1,12 +1,12 @@
 
 from pathlib import Path
 import json
+
 from copy import deepcopy
 
 from parser.openapi_parser import load_openapi_spec, extract_operations
-from generator.basic_generator import generate_request_data
+from generator.basic_generator import generate_request_data, generate_value
 from generator.test_case_generator import generate_string_test_cases
-
 
 # 1. Locate the project and load the OpenAPI specification
 project_root = Path(__file__).resolve().parent.parent
@@ -113,6 +113,60 @@ for operation in operations:
                         "request_body": request_body,
                         "expected": expected
                     })
+        
+        # Generate negative test cases for enum fields
+        if "enum" in field_schema:
+            allowed_values = field_schema["enum"]
+
+            if allowed_values:
+                invalid_value = "__invalid_enum_value__"
+
+                while invalid_value in allowed_values:
+                    invalid_value += "_x"
+
+                request_body = deepcopy(base_data)
+                request_body[field_name] = invalid_value
+
+                test_cases.append({
+                    "test_type": "negative_invalid_enum",
+                    "field": field_name,
+                    "request_body": request_body,
+                    "expected": "invalid"
+                })
+
+        # Generate boundary and negative cases for arrays
+        if field_type == "array":
+            min_items = field_schema.get("minItems")
+            max_items = field_schema.get("maxItems")
+            items_schema = field_schema.get("items", {})
+
+            if min_items is not None and min_items > 0:
+                request_body = deepcopy(base_data)
+                request_body[field_name] = [
+                    generate_value(items_schema)
+                    for _ in range(min_items - 1)
+                ]
+
+                test_cases.append({
+                    "test_type": "negative_below_min_items",
+                    "field": field_name,
+                    "request_body": request_body,
+                    "expected": "invalid"
+                })
+
+            if max_items is not None:
+                request_body = deepcopy(base_data)
+                request_body[field_name] = [
+                    generate_value(items_schema)
+                    for _ in range(max_items + 1)
+                ]
+
+                test_cases.append({
+                    "test_type": "negative_above_max_items",
+                    "field": field_name,
+                    "request_body": request_body,
+                    "expected": "invalid"
+                })
 
         # D. Invalid email test
         if field_schema.get("format") == "email":

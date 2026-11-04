@@ -60,6 +60,38 @@ def create_user(data: dict):
         r"[^@\s]+@[^@\s]+\.[^@\s]+", email
     ):
         raise HTTPException(422, "Invalid email format")
+    
+    # Validate tags array
+    if "tags" in data:
+        tags = data["tags"]
+
+        if not isinstance(tags, list):
+            raise HTTPException(
+                status_code=422,
+                detail="Tags must be an array"
+            )
+
+        if not 1 <= len(tags) <= 3:
+            raise HTTPException(
+                status_code=422,
+                detail="Tags must contain between 1 and 3 items"
+            )
+
+        if not all(isinstance(tag, str) for tag in tags):
+            raise HTTPException(
+                status_code=422,
+                detail="Every tag must be a string"
+            )
+
+    # Validate role enum
+    if "role" in data:
+        allowed_roles = ["admin", "user", "guest"]
+
+        if data["role"] not in allowed_roles:
+            raise HTTPException(
+                status_code=422,
+                detail="Role must be admin, user, or guest"
+            )
 
     return {
         "message": "User created",

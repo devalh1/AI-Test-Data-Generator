@@ -4,11 +4,21 @@ import string
 
 
 def generate_value(field_schema):
-    """Generate a value based on a field's schema."""
+    """Generate a value based on an OpenAPI field schema."""
+
+    # Enum takes priority over normal type generation.
+    if "enum" in field_schema:
+        enum_values = field_schema["enum"]
+
+        if not enum_values:
+            raise ValueError("Enum must contain at least one value")
+
+        return random.choice(enum_values)
 
     field_type = field_schema.get("type", "string")
 
     if field_type == "string":
+
         if field_schema.get("format") == "email":
             return "alex@example.com"
 
@@ -24,6 +34,7 @@ def generate_value(field_schema):
         return "".join(random.choices(characters, k=length))
 
     elif field_type == "integer":
+
         minimum = field_schema.get("minimum", 0)
         maximum = field_schema.get("maximum", 100)
 
@@ -33,6 +44,7 @@ def generate_value(field_schema):
         return random.randint(minimum, maximum)
 
     elif field_type == "number":
+
         minimum = field_schema.get("minimum", 0)
         maximum = field_schema.get("maximum", 100)
 
@@ -45,10 +57,30 @@ def generate_value(field_schema):
         return random.choice([True, False])
 
     elif field_type == "array":
-        return []
+
+        items_schema = field_schema.get("items", {})
+
+        min_items = field_schema.get("minItems", 1)
+        max_items = field_schema.get("maxItems", 3)
+
+        if min_items > max_items:
+            raise ValueError("minItems cannot exceed maxItems")
+
+        item_count = random.randint(min_items, max_items)
+
+        return [
+            generate_value(items_schema)
+            for _ in range(item_count)
+        ]
 
     elif field_type == "object":
-        return {}
+
+        properties = field_schema.get("properties", {})
+
+        return {
+            name: generate_value(property_schema)
+            for name, property_schema in properties.items()
+        }
 
     return None
 

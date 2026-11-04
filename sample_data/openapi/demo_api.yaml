@@ -53,6 +53,29 @@ paths:
                 email:
                   type: string
                   format: email
+                
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  maxItems: 3
+
+                profile:
+                  type: object
+                  properties:
+                    city:
+                      type: string
+                    verified:
+                      type: boolean
+
+                role:
+                  type: string
+                  enum:
+                    - admin
+                    - user
+                    - guest
+
               required:
                 - username
                 - email

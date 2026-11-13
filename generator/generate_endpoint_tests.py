@@ -156,14 +156,16 @@ for operation in operations:
                 ]
 
 
+
                 for case_type, value, expected in cases:
                     request_body = deepcopy(base_data)
                     request_body[field_name] = value
 
-                    # A schema-valid boundary may violate a business rule
+                    # Skip schema-valid boundaries that violate
+                    # conditional business rules.
                     if expected == "valid":
                         if not validate_business_rules(schema, request_body):
-                            expected = "invalid"
+                            continue
 
                     test_cases.append({
                         "test_type": case_type,
@@ -276,6 +278,23 @@ for operation in operations:
 
     test_cases.extend(business_rule_tests)
 
+
+    # Add explanations for negative minimum-boundary tests
+    for case in test_cases:
+        if case["test_type"] == "negative_below_min":
+            field_name = case["field"]
+            minimum = properties[field_name].get("minimum")
+
+            case["failure_reason"] = (
+                f"{field_name} is below the OpenAPI minimum of {minimum}"
+            )
+
+            case["overlapping_business_rule_violation"] = (
+                not validate_business_rules(
+                    schema,
+                    case["request_body"]
+                )
+            )
 
     # G. Add this endpoint and its cases to the complete results
     all_results.append({

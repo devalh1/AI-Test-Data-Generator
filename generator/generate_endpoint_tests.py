@@ -7,7 +7,8 @@ import yaml
 from copy import deepcopy
 from generator.business_rule_generator import (
     generate_business_rule_tests,
-    apply_business_rules
+    apply_business_rules,
+    validate_business_rules
 )
 from parser.openapi_parser import load_openapi_spec, extract_operations
 from generator.basic_generator import generate_request_data, generate_value
@@ -144,7 +145,7 @@ for operation in operations:
                     })
 
         # C. Integer boundary tests
-        elif field_type == "integer":
+        elif field_type in ("integer", "number"):
             minimum = field_schema.get("minimum")
             maximum = field_schema.get("maximum")
 
@@ -154,9 +155,15 @@ for operation in operations:
                     ("negative_below_min", minimum - 1, "invalid")
                 ]
 
+
                 for case_type, value, expected in cases:
                     request_body = deepcopy(base_data)
                     request_body[field_name] = value
+
+                    # A schema-valid boundary may violate a business rule
+                    if expected == "valid":
+                        if not validate_business_rules(schema, request_body):
+                            expected = "invalid"
 
                     test_cases.append({
                         "test_type": case_type,
@@ -164,6 +171,7 @@ for operation in operations:
                         "request_body": request_body,
                         "expected": expected
                     })
+
 
             if maximum is not None:
                 cases = [

@@ -3,7 +3,8 @@ import unittest
 
 from generator.business_rule_generator import (
     apply_business_rules,
-    generate_business_rule_tests
+    generate_business_rule_tests,
+    validate_business_rules
 )
 
 class TestBusinessRules(unittest.TestCase):
@@ -110,6 +111,34 @@ class TestBusinessRules(unittest.TestCase):
         }
 
         self.assertEqual(actual_cases, expected_cases)
+
+
+    def test_business_rule_validation(self):
+        test_cases = [
+            ("savings", 0, False),
+            ("savings", 999, False),
+            ("savings", 1000, True),
+            ("current", 0, False),
+            ("current", 4999, False),
+            ("current", 5000, True),
+        ]
+
+        for account_type, balance, expected in test_cases:
+            with self.subTest(
+                account_type=account_type,
+                balance=balance
+            ):
+                data = {
+                    "account_type": account_type,
+                    "balance": balance
+                }
+
+                result = validate_business_rules(
+                    self.schema,
+                    data
+                )
+
+                self.assertEqual(result, expected)
 
 if __name__ == "__main__":
     unittest.main()

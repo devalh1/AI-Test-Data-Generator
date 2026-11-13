@@ -1,6 +1,8 @@
 
 from pathlib import Path
 import json
+import argparse
+import yaml
 
 from copy import deepcopy
 
@@ -11,15 +13,72 @@ from generator.test_case_generator import generate_string_test_cases
 # 1. Locate the project and load the OpenAPI specification
 project_root = Path(__file__).resolve().parent.parent
 
-spec_path = (
-    project_root
-    / "sample_data"
-    / "openapi"
-    / "demo_api.yaml"
+# Accept an OpenAPI file path from the terminal
+parser = argparse.ArgumentParser(
+    description="Generate API test cases from an OpenAPI specification"
 )
 
-spec = load_openapi_spec(spec_path)
+parser.add_argument(
+    "--spec",
+    type=str,
+    default="sample_data/openapi/demo_api.yaml",
+    help="Path to the OpenAPI YAML specification"
+)
+
+args = parser.parse_args()
+
+spec_path = Path(args.spec)
+
+# Resolve relative paths from the project root
+if not spec_path.is_absolute():
+    spec_path = project_root / spec_path
+
+# Check whether the specification file exists
+if not spec_path.is_file():
+    parser.error(
+        f"OpenAPI specification file not found: {spec_path}"
+    )
+
+try:
+    spec = load_openapi_spec(spec_path)
+except yaml.YAMLError as error:
+    parser.error(
+        f"Invalid YAML syntax in {spec_path}:\n{error}"
+    )
+
+
+if not isinstance(spec, dict):
+    parser.error(
+        "Invalid OpenAPI specification: expected a YAML object."
+    )
+
+# Check essential OpenAPI sections
+required_sections = ["openapi", "info", "paths"]
+
+missing_sections = [
+    section
+    for section in required_sections
+    if section not in spec
+]
+
+if missing_sections:
+    parser.error(
+        "Invalid OpenAPI specification. Missing sections: "
+        + ", ".join(missing_sections)
+    )
+
+if not isinstance(spec["info"], dict):
+    parser.error(
+        "Invalid OpenAPI specification: 'info' must be an object."
+    )
+
+if not isinstance(spec["paths"], dict):
+    parser.error(
+        "Invalid OpenAPI specification: 'paths' must be an object."
+    )
+
 operations = extract_operations(spec)
+
 
 # 2. Store all generated test cases here
 all_results = []

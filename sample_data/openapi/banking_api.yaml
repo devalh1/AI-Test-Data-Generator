@@ -1,0 +1,43 @@
+
+openapi: 3.0.3
+
+info:
+  title: Banking API
+  version: 1.0.0
+
+paths:
+  /accounts:
+    post:
+      summary: Create a bank account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                  minLength: 3
+                  maxLength: 60
+
+                age:
+                  type: integer
+                  minimum: 18
+                  maximum: 100
+
+                email:
+                  type: string
+                  format: email
+
+                account_type:
+                  type: string
+                  enum:
+                    - savings
+                    - current
+
+              required:
+                - full_name
+                - age
+                - email
+                - account_type

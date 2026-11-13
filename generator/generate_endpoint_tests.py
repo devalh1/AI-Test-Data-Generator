@@ -5,7 +5,10 @@ import argparse
 import yaml
 
 from copy import deepcopy
-
+from generator.business_rule_generator import (
+    generate_business_rule_tests,
+    apply_business_rules
+)
 from parser.openapi_parser import load_openapi_spec, extract_operations
 from generator.basic_generator import generate_request_data, generate_value
 from generator.test_case_generator import generate_string_test_cases
@@ -98,8 +101,14 @@ for operation in operations:
     properties = schema.get("properties", {})
     required_fields = schema.get("required", [])
 
+
     base_data = generate_request_data(schema)
+
+    # Ensure the base request satisfies supported business rules
+    base_data = apply_business_rules(schema, base_data)
+
     test_cases = []
+
 
     # A. Positive request
     test_cases.append({
@@ -172,7 +181,7 @@ for operation in operations:
                         "request_body": request_body,
                         "expected": expected
                     })
-        
+
         # Generate negative test cases for enum fields
         if "enum" in field_schema:
             allowed_values = field_schema["enum"]
@@ -251,7 +260,16 @@ for operation in operations:
             "expected": "invalid"
         })
 
-    # F. Add this endpoint and its cases to the complete results
+    # F. Generate cross-field business-rule tests
+    business_rule_tests = generate_business_rule_tests(
+        schema,
+        base_data
+    )
+
+    test_cases.extend(business_rule_tests)
+
+
+    # G. Add this endpoint and its cases to the complete results
     all_results.append({
         "endpoint": operation["path"],
         "method": operation["method"],

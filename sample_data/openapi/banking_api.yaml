@@ -36,8 +36,33 @@ paths:
                     - savings
                     - current
 
+                balance:
+                  type: number
+                  minimum: 0
+                  description: Initial account balance in INR
+
+
               required:
                 - full_name
                 - age
                 - email
                 - account_type
+                - balance
+
+
+              x-business-rules:
+                - name: savings_minimum_balance
+                  when:
+                    field: account_type
+                    equals: savings
+                  then:
+                    field: balance
+                    minimum: 1000
+
+                - name: current_minimum_balance
+                  when:
+                    field: account_type
+                    equals: current
+                  then:
+                    field: balance
+                    minimum: 5000
